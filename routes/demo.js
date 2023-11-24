@@ -23,7 +23,7 @@ router.post("/signup", async function (req, res) {
   const inConfirmEmail = userData["confirm-email"];
   const inPassword = userData.password;
 
-  const hashedPassword = await bcrypt.hash(inPassword, 12)
+  const hashedPassword = await bcrypt.hash(inPassword, 12);
 
   const user = {
     email: inEmail,
@@ -35,7 +35,31 @@ router.post("/signup", async function (req, res) {
   res.redirect("/login");
 });
 
-router.post("/login", async function (req, res) {});
+router.post("/login", async function (req, res) {
+  const userData = req.body;
+  const inEmail = userData.email;
+  const inPassword = userData.password;
+
+  const existingUser = await db
+    .getDb()
+    .collection("users")
+    .findOne({ email: inEmail });
+
+  if (!existingUser) {
+    console.log("Could not find email");
+    return res.redirect("/login");
+  }
+
+  const passwordMatch = await bcrypt.compare(inPassword, existingUser.password);
+
+  if (!passwordMatch) {
+    console.log("Password incorrect");
+    return res.redirect("/login");
+  }
+
+  console.log("Login Successful");
+  res.redirect("/admin");
+});
 
 router.get("/admin", function (req, res) {
   res.render("admin");
