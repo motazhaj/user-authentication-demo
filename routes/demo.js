@@ -40,9 +40,9 @@ router.post("/signup", async function (req, res) {
     .collection("users")
     .findOne({ email: inEmail });
 
-  if (existingUser){
-    console.log("User Exists")
-    return res.redirect("/signup")
+  if (existingUser) {
+    console.log("User Exists");
+    return res.redirect("/signup");
   }
 
   const hashedPassword = await bcrypt.hash(inPassword, 12);
