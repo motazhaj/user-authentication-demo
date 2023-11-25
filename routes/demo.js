@@ -144,15 +144,22 @@ router.post("/login", async function (req, res) {
   req.session.isAuthenticated = true;
   req.session.save(() => {
     console.log("Login Successful");
-    res.redirect("/admin");
+    res.redirect("/profile");
   });
 });
 
-router.get("/admin", function (req, res) {
+router.get("/admin", async function (req, res) {
   if (!req.session.isAuthenticated) {
     return res.status(401).render("401");
   }
-  if (!req.session.user.isAdmin) {
+  const user = req.session.user;
+  const userData = await db
+    .getDb()
+    .collection("users")
+    .findOne({ _id: user._id });
+  const isAdmin = user.isAdmin;
+
+  if (!isAdmin) {
     return res.status(403).render("403");
   }
   res.render("admin");
