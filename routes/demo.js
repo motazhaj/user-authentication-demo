@@ -149,24 +149,19 @@ router.post("/login", async function (req, res) {
 });
 
 router.get("/admin", async function (req, res) {
-  if (!req.session.isAuthenticated) {
+  if (!req.locals.isAuthenticated) {
     return res.status(401).render("401");
   }
-  const user = req.session.user;
-  const userData = await db
-    .getDb()
-    .collection("users")
-    .findOne({ _id: user._id });
-  const isAdmin = user.isAdmin;
 
-  if (!isAdmin) {
+
+  if (!res.locals.isAdmin) {
     return res.status(403).render("403");
   }
   res.render("admin");
 });
 
 router.get("/profile", function (req, res) {
-  if (!req.session.isAuthenticated) {
+  if (!res.local.isAuthenticated) {
     return res.status(401).render("401");
   }
   res.render("profile");
