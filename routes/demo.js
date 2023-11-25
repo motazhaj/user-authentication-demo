@@ -10,7 +10,19 @@ router.get("/", function (req, res) {
 });
 
 router.get("/signup", function (req, res) {
-  res.render("signup");
+  let sessionInputData = req.session.inputData;
+  if (!sessionInputData) {
+    sessionInputData = {
+      hasError: false,
+      email: "",
+      confirmEmail: "",
+      password: "",
+    };
+  }
+
+  req.session.inputData = null;
+
+  return res.render("signup", { inputData: sessionInputData });
 });
 
 router.get("/login", function (req, res) {
@@ -26,13 +38,23 @@ router.post("/signup", async function (req, res) {
   if (
     !inEmail ||
     !inConfirmEmail ||
-    inPassword ||
+    !inPassword ||
     inPassword.trim() < 6 ||
     inEmail !== inConfirmEmail ||
     !inEmail.includes("@")
   ) {
-    console.log("Incorrect Data");
-    return res.redirect("/signup");
+    req.session.inputData = {
+      hasError: true,
+      message: "Invalid input, please check again",
+      email: inEmail,
+      confirmEmail: inConfirmEmail,
+      password: inPassword,
+    };
+    req.session.save(() => {
+      console.log("Incorrect Data");
+      return res.redirect("/signup");
+    });
+    return;
   }
 
   const existingUser = await db
@@ -42,6 +64,13 @@ router.post("/signup", async function (req, res) {
 
   if (existingUser) {
     console.log("User Exists");
+    req.session.inputData = {
+      hasError: true,
+      message: "this email already exists",
+      email: inEmail,
+      confirmEmail: inConfirmEmail,
+      password: inPassword,
+    };
     return res.redirect("/signup");
   }
 
@@ -94,6 +123,10 @@ router.get("/admin", function (req, res) {
   res.render("admin");
 });
 
-router.post("/logout", function (req, res) {});
+router.post("/logout", function (req, res) {
+  req.session.user = null;
+  req.session.isAuthenticated = false;
+  res.redirect("/login");
+});
 
 module.exports = router;
