@@ -51,8 +51,7 @@ router.post("/signup", async function (req, res) {
       password: inPassword,
     };
     req.session.save(() => {
-      console.log("Incorrect Data");
-      return res.redirect("/signup");
+      res.redirect("/signup");
     });
     return;
   }
@@ -71,7 +70,10 @@ router.post("/signup", async function (req, res) {
       confirmEmail: inConfirmEmail,
       password: inPassword,
     };
-    return res.redirect("/signup");
+    req.session.save(() => {
+      res.redirect("/signup");
+    });
+    return;
   }
 
   const hashedPassword = await bcrypt.hash(inPassword, 12);
@@ -97,18 +99,38 @@ router.post("/login", async function (req, res) {
     .findOne({ email: inEmail });
 
   if (!existingUser) {
-    console.log("Could not find email");
-    return res.redirect("/login");
+    req.session.inputData = {
+      hasError: true,
+      message: "This Email doesn't exist",
+      email: inEmail,
+      password: inPassword,
+    };
+    req.session.save(() => {
+      res.redirect("/login");
+    });
+    return;
   }
 
   const passwordMatch = await bcrypt.compare(inPassword, existingUser.password);
 
   if (!passwordMatch) {
-    console.log("Password incorrect");
-    return res.redirect("/login");
+    req.session.inputData = {
+      hasError: true,
+      message: "Incorrect password",
+      email: inEmail,
+      password: inPassword,
+    };
+    req.session.save(() => {
+      res.redirect("/login");
+    });
+    return;
   }
 
-  req.session.user = { id: existingUser._id, email: existingUser.email };
+  req.session.user = {
+    id: existingUser._id,
+    email: existingUser.email,
+    isAdmin: existingUser.isAdmin,
+  };
   req.session.isAuthenticated = true;
   req.session.save(() => {
     console.log("Login Successful");
@@ -120,7 +142,17 @@ router.get("/admin", function (req, res) {
   if (!req.session.isAuthenticated) {
     return res.status(401).render("401");
   }
+  if (!req.session.user.isAdmin) {
+    return res.status(403).render("403");
+  }
   res.render("admin");
+});
+
+router.get("/profile", function (req, res) {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).render("401");
+  }
+  res.render("profile");
 });
 
 router.post("/logout", function (req, res) {
